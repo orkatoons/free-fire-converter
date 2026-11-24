@@ -83,8 +83,11 @@ Add a short README: how to run, how to build a Windows installer (electron-build
 
 ## PROMPT 2 — UI design pass (run via impeccable after Prompt 1 is done and working)
 
+Impeccable is installed at project scope (`.claude/skills/impeccable`, hooks in `.claude/settings.local.json`).
+After reloading Claude Code: run `/impeccable init` first (writes PRODUCT.md — the product context below answers its questions), then send:
+
 ```
-Redesign the UI of this Electron video converter using impeccable. Start by setting up impeccable's design context for the project, then design and build.
+/impeccable Redesign the UI of this Electron video converter (a full redesign — treat the current plain look as an anti-reference, not something to polish). Mode: Operate.
 
 HARD BOUNDARY: only edit src/renderer/components/**, src/renderer/styles/**, src/renderer/App.tsx layout, and add assets/fonts. Do NOT change src/main, src/preload, src/shared, or src/renderer/state — consume the existing hooks/props as-is. If a hook is genuinely missing something the design needs, list it at the end instead of adding it.
 
@@ -103,5 +106,7 @@ STATES TO DESIGN (all exist in the current functional UI):
 - Queue finished summary with "Open output folder".
 - Error/system states: ffmpeg not found (path setter), no GPU encoder verified (software fallback notice), unknown-duration files (indeterminate progress).
 
-Keep it fully keyboard-accessible (Ctrl+O add files, Delete removes selection, Enter starts), visible focus, respect reduced motion. After building, run impeccable's audit/critique and polish passes, and verify with npm run dev and npm run build.
+Keep it fully keyboard-accessible (Ctrl+O add files, Delete removes selection, Ctrl+Enter starts, Ctrl+A select all, Esc closes dialogs), visible focus, respect reduced motion. Verify by looking at the running app (npm run dev) — to populate it with real files, the test fixtures in test-fixtures/ can be added via window.api.addPaths from DevTools. npm run build and npm test must still pass.
 ```
+
+Then finish with `/impeccable critique`, `/impeccable audit`, and `/impeccable polish` on the parts that need it.

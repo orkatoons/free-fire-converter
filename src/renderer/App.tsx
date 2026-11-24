@@ -47,10 +47,12 @@ export function App(): ReactNode {
       <main className="app__body">
         <div className="app__files">
           {rows.length === 0 ? (
-            <EmptyState onAddFiles={() => void s.pickFiles()} onAddFolder={() => void s.pickFolderToAdd()} />
+            <EmptyState container={s.settings.convert.container} onAddFiles={() => void s.pickFiles()} onAddFolder={() => void s.pickFolderToAdd()} />
           ) : (
             <FileList
               rows={rows}
+              convert={s.settings.convert}
+              caps={s.caps}
               selectedCount={s.selected.length}
               onRemoveSelected={() => void s.removeSelected()}
               onClearSelection={s.clearSelection}
@@ -89,6 +91,8 @@ export function App(): ReactNode {
       <Footer
         queue={s.queue}
         totals={totals}
+        rows={rows}
+        container={s.settings.convert.container}
         outputLabel={model.outputLabel}
         onStart={() => void s.start()}
         onPause={() => void s.pause()}

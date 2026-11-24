@@ -3,3 +3,5 @@ out/
 release/
 test-fixtures/
 *.log
+.claude/settings.local.json
+.impeccable/config.local.json

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { Capabilities } from '../../shared/types'
+import { IconAlert, IconError, IconFolder, IconInfo, IconRetry } from './icons'
 
 export interface SystemBannerProps {
   caps: Capabilities | null
@@ -9,26 +10,32 @@ export interface SystemBannerProps {
   onRetry: () => void
 }
 
-/** Shows only when something is wrong (ffmpeg missing / no GPU encoder). */
+/** Shows only when something is wrong (ffmpeg missing / no GPU encoder) or still being checked. */
 export function SystemBanner({ caps, loading, verifiedHardware, onPickFfmpegDir, onRetry }: SystemBannerProps): ReactNode {
   if (loading && !caps) {
-    return <div className="banner banner--info" role="status">Checking ffmpeg and GPU encoders…</div>
+    return (
+      <div className="banner banner--info" role="status">
+        <IconInfo className="banner__icon" />
+        <div className="banner__body">Checking ffmpeg and testing your GPU encoders…</div>
+      </div>
+    )
   }
   if (!caps) return null
   if (!caps.ffmpegFound) {
     return (
       <div className="banner banner--error" role="alert">
-        <div>
-          <strong>ffmpeg wasn't found.</strong> Install it (e.g. <code>winget install ffmpeg</code>) or point to the folder containing
-          ffmpeg.exe and ffprobe.exe.
+        <IconError className="banner__icon" />
+        <div className="banner__body">
+          <strong>ffmpeg isn’t installed or can’t be found.</strong> Nothing can be converted until it is. Install it with{' '}
+          <code>winget install ffmpeg</code>, or point to the folder that contains ffmpeg.exe and ffprobe.exe.
           {caps.error ? <div className="banner__detail">{caps.error}</div> : null}
         </div>
         <div className="banner__actions">
-          <button type="button" className="btn btn--primary" onClick={onPickFfmpegDir}>
-            Locate ffmpeg…
+          <button type="button" className="btn btn--primary btn--sm" onClick={onPickFfmpegDir}>
+            <IconFolder /> Locate ffmpeg…
           </button>
-          <button type="button" className="btn" onClick={onRetry} disabled={loading}>
-            {loading ? 'Checking…' : 'Check again'}
+          <button type="button" className="btn btn--sm" onClick={onRetry} disabled={loading}>
+            <IconRetry /> {loading ? 'Checking…' : 'Check again'}
           </button>
         </div>
       </div>
@@ -36,12 +43,15 @@ export function SystemBanner({ caps, loading, verifiedHardware, onPickFfmpegDir,
   }
   if (verifiedHardware.length === 0) {
     return (
-      <div className="banner banner--warning" role="status">
-        No GPU encoder passed the hardware test — converting on the CPU (slower, same quality). Update GPU drivers and click
-        “Check again” to retry.
+      <div className="banner banner--warn" role="status">
+        <IconAlert className="banner__icon" />
+        <div className="banner__body">
+          No GPU encoder passed its test, so files will convert on the CPU: same quality, slower. Updating your graphics driver
+          usually fixes this.
+        </div>
         <div className="banner__actions">
-          <button type="button" className="btn" onClick={onRetry} disabled={loading}>
-            {loading ? 'Checking…' : 'Check again'}
+          <button type="button" className="btn btn--sm" onClick={onRetry} disabled={loading}>
+            <IconRetry /> {loading ? 'Checking…' : 'Test again'}
           </button>
         </div>
       </div>

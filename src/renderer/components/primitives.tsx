@@ -1,22 +1,23 @@
 import type { ReactNode } from 'react'
 
-export function ProgressBar({ value, label }: { value: number | null; label?: string }): ReactNode {
+/** Thin progress line in the current --line ink; null = indeterminate. */
+export function ProgressLine({ value, label }: { value: number | null; label?: string }): ReactNode {
   const indeterminate = value == null
   return (
     <div
-      className={`progress${indeterminate ? ' progress--indeterminate' : ''}`}
+      className={`pline${indeterminate ? ' pline--indeterminate' : ''}`}
       role="progressbar"
       aria-label={label}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={indeterminate ? undefined : Math.round(value * 100)}
     >
-      <div className="progress__fill" style={indeterminate ? undefined : { width: `${Math.max(0, Math.min(1, value)) * 100}%` }} />
+      <div className="pline__fill" style={indeterminate ? undefined : { transform: `scaleX(${Math.max(0, Math.min(1, value))})` }} />
     </div>
   )
 }
 
-export function Field({ label, hint, children, htmlFor }: { label: string; hint?: string; children: ReactNode; htmlFor?: string }): ReactNode {
+export function Field({ label, hint, children, htmlFor }: { label: string; hint?: ReactNode; children: ReactNode; htmlFor?: string }): ReactNode {
   return (
     <div className="field">
       <label className="field__label" htmlFor={htmlFor}>
@@ -33,16 +34,18 @@ export function Select<T extends string>({
   value,
   options,
   onChange,
-  disabled
+  disabled,
+  ariaLabel
 }: {
   id?: string
   value: T
   options: Array<{ value: T; label: string; disabled?: boolean }>
   onChange: (v: T) => void
   disabled?: boolean
+  ariaLabel?: string
 }): ReactNode {
   return (
-    <select id={id} className="select" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value as T)}>
+    <select id={id} aria-label={ariaLabel} className="select" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value as T)}>
       {options.map((o) => (
         <option key={o.value} value={o.value} disabled={o.disabled}>
           {o.label}
@@ -59,7 +62,8 @@ export function NumberInput({
   max,
   step,
   onChange,
-  suffix
+  suffix,
+  ariaLabel
 }: {
   id?: string
   value: number
@@ -68,11 +72,13 @@ export function NumberInput({
   step?: number
   onChange: (v: number) => void
   suffix?: string
+  ariaLabel?: string
 }): ReactNode {
   return (
     <span className="number-input">
       <input
         id={id}
+        aria-label={ariaLabel}
         type="number"
         className="input input--number"
         value={Number.isFinite(value) ? value : ''}

@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import type { AppSettings, ConvertSettings, OutputSettings, Preset } from '../../shared/types'
 import type { SettingsModel } from '../state/hooks'
+import { IconFolder, IconRemove, IconRetry } from './icons'
 import { Checkbox, Field, NumberInput, Segmented, Select } from './primitives'
 
 export interface SettingsPanelProps {
@@ -29,11 +30,9 @@ export function SettingsPanel(p: SettingsPanelProps): ReactNode {
   const m = p.model
   const [presetName, setPresetName] = useState<string | null>(null)
   const activePreset = p.presets.find((x) => x.id === p.settings.activePresetId)
-  const encoding = c.videoMode === 'encode' || c.container !== 'mkv'
 
   return (
     <aside className="settings" aria-label="Conversion settings">
-      {/* Presets */}
       <section className="settings__section">
         <Field label="Preset" htmlFor="preset">
           <Select
@@ -41,16 +40,23 @@ export function SettingsPanel(p: SettingsPanelProps): ReactNode {
             value={activePreset?.id ?? CUSTOM}
             onChange={(v) => v !== CUSTOM && p.onApplyPreset(v)}
             options={[
-              ...(activePreset ? [] : [{ value: CUSTOM, label: 'Custom (modified)' }]),
-              ...p.presets.map((x) => ({ value: x.id, label: x.builtIn ? x.name : `★ ${x.name}` }))
+              ...(activePreset ? [] : [{ value: CUSTOM, label: 'Custom (changed below)' }]),
+              ...p.presets.map((x) => ({ value: x.id, label: x.builtIn ? x.name : `${x.name} (yours)` }))
             ]}
           />
         </Field>
         <div className="settings__row">
           {presetName === null ? (
-            <button type="button" className="btn btn--small" onClick={() => setPresetName(activePreset && !activePreset.builtIn ? activePreset.name : '')}>
-              Save as preset…
-            </button>
+            <>
+              <button type="button" className="btn btn--sm btn--ghost" onClick={() => setPresetName(activePreset && !activePreset.builtIn ? activePreset.name : '')}>
+                Save these settings as a preset…
+              </button>
+              {activePreset && !activePreset.builtIn ? (
+                <button type="button" className="btn btn--sm btn--ghost" onClick={() => p.onDeletePreset(activePreset.id)}>
+                  <IconRemove /> Delete preset
+                </button>
+              ) : null}
+            </>
           ) : (
             <form
               className="inline-form"
@@ -63,63 +69,67 @@ export function SettingsPanel(p: SettingsPanelProps): ReactNode {
               <input
                 className="input"
                 autoFocus
+                aria-label="Preset name"
                 placeholder="Preset name"
                 value={presetName}
                 onChange={(e) => setPresetName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Escape' && setPresetName(null)}
               />
-              <button type="submit" className="btn btn--small btn--primary">
+              <button type="submit" className="btn btn--sm btn--primary">
                 Save
               </button>
-              <button type="button" className="btn btn--small btn--ghost" onClick={() => setPresetName(null)}>
+              <button type="button" className="btn btn--sm btn--ghost" onClick={() => setPresetName(null)}>
                 Cancel
               </button>
             </form>
           )}
-          {activePreset && !activePreset.builtIn && presetName === null ? (
-            <button type="button" className="btn btn--small btn--ghost" onClick={() => p.onDeletePreset(activePreset.id)}>
-              Delete preset
-            </button>
-          ) : null}
         </div>
       </section>
 
-      {/* Format */}
       <section className="settings__section">
         <h2 className="settings__heading">Format</h2>
-        <Field label="Container" htmlFor="container">
+        <Field label="Save as" htmlFor="container">
           <Select
             id="container"
             value={c.container}
             onChange={(v) => p.onConvert({ container: v })}
             options={[
               { value: 'mp4', label: 'MP4 — plays everywhere' },
-              { value: 'mkv', label: 'MKV — holds anything' },
-              { value: 'mov', label: 'MOV — Apple / editors' },
-              { value: 'webm', label: 'WebM — web' }
+              { value: 'mkv', label: 'MKV — holds any codec' },
+              { value: 'mov', label: 'MOV — Apple and video editors' },
+              { value: 'webm', label: 'WebM — for the web' }
             ]}
           />
         </Field>
-        <Field label="Video" hint={c.videoMode === 'copy' ? m.copyHint : undefined}>
+        <Field label="Video" hint={c.videoMode === 'copy' ? m.copyHint : 'Re-encoding lets you change codec, size and quality.'}>
           <Segmented
-            ariaLabel="Video mode"
+            ariaLabel="Video"
             value={c.videoMode}
             onChange={(v) => p.onConvert({ videoMode: v })}
             options={[
               { value: 'encode', label: 'Re-encode' },
-              { value: 'copy', label: 'Copy (no re-encode)' }
+              { value: 'copy', label: 'Copy as-is' }
             ]}
           />
         </Field>
       </section>
 
-      {/* Video */}
-      <section className="settings__section" aria-disabled={!encoding}>
-        <h2 className="settings__heading">Video{c.videoMode === 'copy' ? ' (used when copy isn’t possible)' : ''}</h2>
+      <section className="settings__section">
+        <h2 className="settings__heading">{c.videoMode === 'copy' ? 'Video, when copying isn’t possible' : 'Video'}</h2>
         <Field label="Codec" htmlFor="codec">
           <Select id="codec" value={c.videoCodec} onChange={(v) => p.onConvert({ videoCodec: v })} options={m.codecOptions} />
         </Field>
-        <Field label="Quality" htmlFor="qmode" hint={c.qualityMode === 'cq' ? m.quality.hint : c.qualityMode === 'source-bitrate' ? 'Per file: source bitrate, adjusted for codec efficiency and resolution.' : undefined}>
+        <Field
+          label="Quality"
+          htmlFor="qmode"
+          hint={
+            c.qualityMode === 'cq'
+              ? m.quality.hint
+              : c.qualityMode === 'source-bitrate'
+                ? 'Each file gets its source bitrate, adjusted for codec and size.'
+                : 'Same bitrate for every file.'
+          }
+        >
           <Select
             id="qmode"
             value={c.qualityMode}
@@ -127,12 +137,13 @@ export function SettingsPanel(p: SettingsPanelProps): ReactNode {
             options={[
               { value: 'cq', label: 'Constant quality (recommended)' },
               { value: 'source-bitrate', label: 'Match source bitrate' },
-              { value: 'bitrate', label: 'Target bitrate' }
+              { value: 'bitrate', label: 'Fixed bitrate' }
             ]}
           />
         </Field>
         {c.qualityMode === 'cq' ? (
-          <div className="settings__row settings__row--slider">
+          <div className="slider">
+            <span className="slider__end">Best</span>
             <input
               type="range"
               aria-label={`${m.quality.label} value`}
@@ -141,7 +152,8 @@ export function SettingsPanel(p: SettingsPanelProps): ReactNode {
               value={c.quality}
               onChange={(e) => p.onConvert({ quality: Number(e.target.value) })}
             />
-            <NumberInput value={c.quality} min={m.quality.min} max={m.quality.max} onChange={(v) => p.onConvert({ quality: v })} suffix={m.quality.label} />
+            <span className="slider__end">Smallest</span>
+            <NumberInput ariaLabel={`${m.quality.label} value`} value={c.quality} min={m.quality.min} max={m.quality.max} onChange={(v) => p.onConvert({ quality: v })} suffix={m.quality.label} />
           </div>
         ) : null}
         {c.qualityMode === 'bitrate' ? (
@@ -160,29 +172,29 @@ export function SettingsPanel(p: SettingsPanelProps): ReactNode {
               { value: '1440', label: '1440p' },
               { value: '1080', label: '1080p' },
               { value: '720', label: '720p' },
-              { value: 'custom', label: 'Custom…' }
+              { value: 'custom', label: 'Custom size…' }
             ]}
           />
         </Field>
         {c.resolution === 'custom' ? (
           <div className="settings__row">
-            <NumberInput value={c.customWidth} min={0} max={8192} step={2} onChange={(v) => p.onConvert({ customWidth: v })} suffix="W" />
-            <span>×</span>
-            <NumberInput value={c.customHeight} min={0} max={8192} step={2} onChange={(v) => p.onConvert({ customHeight: v })} suffix="H" />
-            <span className="field__hint">0 = keep aspect</span>
+            <NumberInput ariaLabel="Width" value={c.customWidth} min={0} max={8192} step={2} onChange={(v) => p.onConvert({ customWidth: v })} suffix="W" />
+            <span className="settings__times" aria-hidden="true">×</span>
+            <NumberInput ariaLabel="Height" value={c.customHeight} min={0} max={8192} step={2} onChange={(v) => p.onConvert({ customHeight: v })} suffix="H" />
+            <span className="field__hint">0 keeps the aspect ratio</span>
           </div>
         ) : null}
         {c.resolution !== 'source' ? (
-          <Checkbox checked={c.allowUpscale} onChange={(v) => p.onConvert({ allowUpscale: v })} label="Allow upscaling smaller sources" />
+          <Checkbox checked={c.allowUpscale} onChange={(v) => p.onConvert({ allowUpscale: v })} label="Also enlarge smaller videos" />
         ) : null}
         <Field
           label="Frame rate"
           htmlFor="fps"
           hint={
             c.fpsMode === 'source'
-              ? 'Keeps original timing, including variable frame rate (screen recordings).'
+              ? 'Keeps the original timing, including variable frame rate from screen recorders.'
               : c.fpsMode === 'cfr-source'
-                ? 'Constant frame rate at the source’s average — editors like Premiere/Resolve prefer this.'
+                ? 'Constant frame rate at the source’s average. Editors like Premiere and Resolve prefer this.'
                 : undefined
           }
         >
@@ -191,39 +203,40 @@ export function SettingsPanel(p: SettingsPanelProps): ReactNode {
             value={c.fpsMode}
             onChange={(v) => p.onConvert({ fpsMode: v })}
             options={[
-              { value: 'source', label: 'Match source (keep timing)' },
-              { value: 'cfr-source', label: 'Constant, at source fps (for editing)' },
-              { value: 'fixed', label: 'Fixed…' }
+              { value: 'source', label: 'Match source' },
+              { value: 'cfr-source', label: 'Constant, at source rate (for editing)' },
+              { value: 'fixed', label: 'Fixed rate…' }
             ]}
           />
         </Field>
         {c.fpsMode === 'fixed' ? (
           <div className="settings__row">
             <Select
+              ariaLabel="Fixed frame rate"
               value={String(c.fixedFps)}
               onChange={(v) => p.onConvert({ fixedFps: Number(v) })}
               options={['24', '25', '30', '50', '60', '120'].map((v) => ({ value: v, label: `${v} fps` }))}
             />
           </div>
         ) : null}
-        <Field label="10-bit / HDR sources" htmlFor="hdr">
+        <Field label="HDR and 10-bit sources" htmlFor="hdr">
           <Select
             id="hdr"
             value={c.highBitDepth}
             onChange={(v) => p.onConvert({ highBitDepth: v })}
             options={[
-              { value: 'preserve', label: 'Preserve (switches H.264 → HEVC 10-bit)' },
+              { value: 'preserve', label: 'Keep HDR (uses HEVC 10-bit)' },
               { value: 'tonemap', label: 'Convert to SDR / 8-bit' }
             ]}
           />
         </Field>
       </section>
 
-      {/* Audio */}
       <section className="settings__section">
         <h2 className="settings__heading">Audio</h2>
-        <div className="settings__row">
+        <div className="settings__row settings__row--pair">
           <Select
+            ariaLabel="Audio format"
             value={c.audio}
             onChange={(v) => p.onConvert({ audio: v })}
             options={[
@@ -235,6 +248,7 @@ export function SettingsPanel(p: SettingsPanelProps): ReactNode {
           />
           {c.audio === 'aac' || c.audio === 'opus' ? (
             <Select
+              ariaLabel="Audio bitrate"
               value={String(c.audioBitrateKbps)}
               onChange={(v) => p.onConvert({ audioBitrateKbps: Number(v) })}
               options={['96', '128', '160', '192', '256', '320'].map((v) => ({ value: v, label: `${v} kbps` }))}
@@ -243,7 +257,6 @@ export function SettingsPanel(p: SettingsPanelProps): ReactNode {
         </div>
       </section>
 
-      {/* Output */}
       <section className="settings__section">
         <h2 className="settings__heading">Output</h2>
         <Field label="Save to">
@@ -251,36 +264,35 @@ export function SettingsPanel(p: SettingsPanelProps): ReactNode {
             {m.outputLabel}
           </div>
           <div className="settings__row">
-            <button type="button" className="btn btn--small" onClick={p.onPickOutputFolder}>
-              Choose folder…
+            <button type="button" className="btn btn--sm" onClick={p.onPickOutputFolder}>
+              <IconFolder /> Choose folder…
             </button>
             {o.dir ? (
-              <button type="button" className="btn btn--small btn--ghost" onClick={p.onUseSourceFolder}>
-                Use source folder
+              <button type="button" className="btn btn--sm btn--ghost" onClick={p.onUseSourceFolder}>
+                Next to each original
               </button>
             ) : null}
           </div>
         </Field>
-        <Field label="File name" htmlFor="tpl" hint="Tokens: {name} {res} {codec} {date}">
+        <Field label="File name" htmlFor="tpl" hint={<>Use <code>{'{name}'}</code> <code>{'{res}'}</code> <code>{'{codec}'}</code> <code>{'{date}'}</code></>}>
           <input id="tpl" className="input" value={o.filenameTemplate} onChange={(e) => p.onOutput({ filenameTemplate: e.target.value })} />
         </Field>
-        <Field label="If the file exists" htmlFor="conflict">
+        <Field label="If a file with that name exists" htmlFor="conflict">
           <Select
             id="conflict"
             value={o.conflict}
             onChange={(v) => p.onOutput({ conflict: v })}
             options={[
-              { value: 'rename', label: 'Add a number — “name (1)”' },
-              { value: 'overwrite', label: 'Overwrite' },
-              { value: 'skip', label: 'Skip' }
+              { value: 'rename', label: 'Add a number, like “name (1)”' },
+              { value: 'overwrite', label: 'Replace it' },
+              { value: 'skip', label: 'Skip that file' }
             ]}
           />
         </Field>
       </section>
 
-      {/* Advanced */}
       <details className="settings__section settings__advanced">
-        <summary className="settings__heading">Advanced</summary>
+        <summary className="settings__heading settings__summary">Advanced</summary>
         <Field label="Encoder" htmlFor="encoder">
           <Select
             id="encoder"
@@ -292,7 +304,7 @@ export function SettingsPanel(p: SettingsPanelProps): ReactNode {
             ]}
           />
         </Field>
-        <Field label="Speed" htmlFor="speed" hint="Slower = slightly smaller files at the same quality.">
+        <Field label="Speed" htmlFor="speed" hint="Slower makes slightly smaller files at the same quality.">
           <Select
             id="speed"
             value={c.speed}
@@ -306,30 +318,28 @@ export function SettingsPanel(p: SettingsPanelProps): ReactNode {
             ]}
           />
         </Field>
-        <Checkbox checked={c.hwDecode} onChange={(v) => p.onConvert({ hwDecode: v })} label="Hardware decoding (auto-retries without it on failure)" />
-        <Field label="Files at once" htmlFor="conc" hint="1 is usually fastest for 4K on a single GPU.">
+        <Checkbox checked={c.hwDecode} onChange={(v) => p.onConvert({ hwDecode: v })} label="Decode on the GPU (falls back automatically)" />
+        <Field label="Files at once" htmlFor="conc" hint="1 is usually fastest for 4K on one GPU.">
           <NumberInput id="conc" value={p.settings.concurrency} min={1} max={4} onChange={(v) => p.onApp({ concurrency: Math.min(4, Math.max(1, Math.round(v))) })} />
         </Field>
-        <Checkbox checked={p.settings.notifyOnFinish} onChange={(v) => p.onApp({ notifyOnFinish: v })} label="Notify when the queue finishes" />
-        <Checkbox checked={p.settings.openFolderOnFinish} onChange={(v) => p.onApp({ openFolderOnFinish: v })} label="Open output folder when finished" />
+        <Checkbox checked={p.settings.notifyOnFinish} onChange={(v) => p.onApp({ notifyOnFinish: v })} label="Notify me when everything is done" />
+        <Checkbox checked={p.settings.openFolderOnFinish} onChange={(v) => p.onApp({ openFolderOnFinish: v })} label="Open the output folder when done" />
         <Field label="ffmpeg">
           <div className="settings__path" title={m.ffmpegInfo}>
             {m.ffmpegInfo}
           </div>
-          <div className="settings__path">
-            GPU encoders verified: {m.verifiedHardware.length ? m.verifiedHardware.join(', ') : 'none'}
-          </div>
+          <div className="settings__path">GPU encoders that passed: {m.verifiedHardware.length ? m.verifiedHardware.join(', ') : 'none'}</div>
           <div className="settings__row">
-            <button type="button" className="btn btn--small" onClick={p.onPickFfmpegDir}>
-              Use a different ffmpeg…
+            <button type="button" className="btn btn--sm" onClick={p.onPickFfmpegDir}>
+              <IconFolder /> Use a different ffmpeg…
             </button>
             {p.settings.ffmpegDir ? (
-              <button type="button" className="btn btn--small btn--ghost" onClick={p.onClearFfmpegDir}>
-                Use PATH
+              <button type="button" className="btn btn--sm btn--ghost" onClick={p.onClearFfmpegDir}>
+                Use the one on PATH
               </button>
             ) : null}
-            <button type="button" className="btn btn--small btn--ghost" onClick={p.onRefreshCaps}>
-              Re-check
+            <button type="button" className="btn btn--sm btn--ghost" onClick={p.onRefreshCaps}>
+              <IconRetry /> Test again
             </button>
           </div>
         </Field>

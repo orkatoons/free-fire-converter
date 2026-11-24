@@ -1,7 +1,23 @@
 import type { MouseEvent, ReactNode } from 'react'
-import { formatBytes } from '../../shared/format'
+import { formatDuration } from '../../shared/format'
+import type { Capabilities, ConvertSettings } from '../../shared/types'
 import type { JobRowModel } from '../state/hooks'
-import { ProgressBar } from './primitives'
+import {
+  IconAlert,
+  IconArrowRight,
+  IconCommand,
+  IconCopy,
+  IconError,
+  IconInfo,
+  IconLog,
+  IconPlay,
+  IconRemove,
+  IconReveal,
+  IconRetry,
+  IconStop
+} from './icons'
+import { Route } from './Route'
+import { buildRoute } from './routeModel'
 
 export interface FileListActions {
   onSelect: (id: string, mode: 'single' | 'toggle' | 'range') => void
@@ -18,43 +34,53 @@ export interface FileListActions {
 
 export interface FileListProps extends FileListActions {
   rows: JobRowModel[]
+  convert: ConvertSettings
+  caps: Capabilities | null
   selectedCount: number
   onRemoveSelected: () => void
   onClearSelection: () => void
 }
 
-export function FileList({ rows, selectedCount, onRemoveSelected, onClearSelection, ...actions }: FileListProps): ReactNode {
+export function FileList({ rows, convert, caps, selectedCount, onRemoveSelected, onClearSelection, ...actions }: FileListProps): ReactNode {
   return (
-    <section className="filelist" aria-label="Files">
+    <section className="jobs" aria-label="Files">
       {selectedCount > 0 ? (
-        <div className="filelist__selbar">
-          <span>{selectedCount} selected</span>
-          <button type="button" className="btn btn--small" onClick={onRemoveSelected}>
-            Remove selected
+        <div className="jobs__selbar" role="toolbar" aria-label="Selection">
+          <span className="jobs__selcount">{selectedCount} selected</span>
+          <button type="button" className="btn btn--sm" onClick={onRemoveSelected}>
+            <IconRemove /> Remove selected
           </button>
-          <button type="button" className="btn btn--small btn--ghost" onClick={onClearSelection}>
+          <button type="button" className="btn btn--sm btn--ghost" onClick={onClearSelection}>
             Clear selection
           </button>
         </div>
       ) : null}
-      <ul className="filelist__items" role="listbox" aria-multiselectable="true">
+      <ul className="jobs__list" role="listbox" aria-multiselectable="true" aria-label="Files to convert">
         {rows.map((r) => (
-          <FileRow key={r.job.id} row={r} {...actions} />
+          <JobRow key={r.job.id} row={r} convert={convert} caps={caps} {...actions} />
         ))}
       </ul>
     </section>
   )
 }
 
-function FileRow({ row, ...a }: { row: JobRowModel } & FileListActions): ReactNode {
+function JobRow({ row, convert, caps, ...a }: { row: JobRowModel; convert: ConvertSettings; caps: Capabilities | null } & FileListActions): ReactNode {
   const { job } = row
+  const route = buildRoute(row, convert, caps)
+  const running = job.status === 'running'
+
   const onClick = (e: MouseEvent): void => {
     if ((e.target as HTMLElement).closest('button, a')) return
     a.onSelect(job.id, e.shiftKey ? 'range' : e.ctrlKey || e.metaKey ? 'toggle' : 'single')
   }
+
+  const errors = [...row.errors]
+  if (job.error && job.status !== 'ready' && !errors.includes(job.error)) errors.push(job.error)
+  const showNotes = job.status === 'ready' || job.status === 'probing'
+
   return (
     <li
-      className={`filerow filerow--${job.status}${row.selected ? ' is-selected' : ''}`}
+      className={`job job--${job.status}${row.selected ? ' is-selected' : ''}`}
       role="option"
       aria-selected={row.selected}
       tabIndex={0}
@@ -66,109 +92,99 @@ function FileRow({ row, ...a }: { row: JobRowModel } & FileListActions): ReactNo
         }
       }}
     >
-      <div className="filerow__main">
-        <div className="filerow__name" title={job.inputPath}>
+      <div className="job__head">
+        <span className="job__name" title={job.inputPath}>
           {job.name}
-        </div>
-        <div className="filerow__status">
+        </span>
+        <span className="job__state">
+          {running && job.progress != null ? <span className="job__pct">{Math.floor(job.progress * 100)}%</span> : null}
           <span className={`status status--${job.status}`}>{row.statusLabel}</span>
-          {row.progressLabel ? <span className="filerow__progress-label">{row.progressLabel}</span> : null}
-        </div>
+          {row.progressLabel && !running ? <span className="job__meta">{row.progressLabel}</span> : null}
+          {running ? <span className="job__meta">{runningMeta(row)}</span> : null}
+        </span>
       </div>
 
-      {row.specs.length ? (
-        <div className="filerow__specs" aria-label="Source">
-          {row.specs.map((s) => (
-            <span key={s} className="chip">
-              {s}
-            </span>
+      <Route route={route} label={`Conversion plan for ${job.name}`} />
+
+      {errors.length || row.warnings.length || (showNotes && row.notes.length) ? (
+        <ul className="notices-inline">
+          {errors.map((m, i) => (
+            <li key={`e${i}`} className="notice-line notice-line--error">
+              <IconError /> <span>{m}</span>
+            </li>
           ))}
-        </div>
-      ) : null}
-
-      {row.outputSummary ? (
-        <div className="filerow__output">
-          <span className="filerow__arrow" aria-hidden="true">
-            →
-          </span>{' '}
-          {row.outputSummary}
-          {job.status === 'done' && job.outputSizeBytes != null ? ` · ${formatBytes(job.outputSizeBytes)}` : ''}
-        </div>
-      ) : null}
-
-      {job.status === 'running' || job.status === 'queued' ? (
-        <ProgressBar value={job.status === 'queued' ? 0 : job.progress} label={`Progress for ${job.name}`} />
-      ) : null}
-
-      {row.errors.length || (job.error && (job.status === 'failed' || job.status === 'probe-failed' || job.status === 'skipped')) ? (
-        <div className="filerow__msgs filerow__msgs--error">
-          {[...row.errors, ...(job.error && job.status !== 'ready' ? [job.error] : [])].map((m, i) => (
-            <div key={i}>{m}</div>
-          ))}
-        </div>
-      ) : null}
-      {row.warnings.length ? (
-        <div className="filerow__msgs filerow__msgs--warning">
           {row.warnings.map((m, i) => (
-            <div key={i}>⚠ {m}</div>
+            <li key={`w${i}`} className="notice-line notice-line--warn">
+              <IconAlert /> <span>{m}</span>
+            </li>
           ))}
-        </div>
-      ) : null}
-      {row.notes.length && job.status === 'ready' ? (
-        <div className="filerow__msgs filerow__msgs--note">
-          {row.notes.map((m, i) => (
-            <div key={i}>{m}</div>
-          ))}
-        </div>
+          {showNotes
+            ? row.notes.map((m, i) => (
+                <li key={`n${i}`} className="notice-line notice-line--note">
+                  <IconInfo /> <span>{m}</span>
+                </li>
+              ))
+            : null}
+        </ul>
       ) : null}
 
-      <div className="filerow__actions">
+      <div className="job__actions">
         {row.canStartOne ? (
-          <button type="button" className="btn btn--small" onClick={() => a.onStartOne(job.id)}>
-            Convert this
+          <button type="button" className="btn btn--sm" onClick={() => a.onStartOne(job.id)}>
+            <IconArrowRight /> Convert this file
           </button>
         ) : null}
         {row.canCancel ? (
-          <button type="button" className="btn btn--small" onClick={() => a.onCancel(job.id)}>
-            Cancel
-          </button>
-        ) : null}
-        {row.canRetry ? (
-          <button type="button" className="btn btn--small" onClick={() => a.onRetry(job.id)}>
-            {job.status === 'done' ? 'Convert again' : 'Retry'}
+          <button type="button" className="btn btn--sm" onClick={() => a.onCancel(job.id)}>
+            <IconStop /> {job.status === 'queued' ? 'Take out of queue' : 'Cancel'}
           </button>
         ) : null}
         {row.hasOutput ? (
           <>
-            <button type="button" className="btn btn--small" onClick={() => a.onOpen(job.outputPath!)}>
-              Play
+            <button type="button" className="btn btn--sm" onClick={() => a.onOpen(job.outputPath!)}>
+              <IconPlay /> Play
             </button>
-            <button type="button" className="btn btn--small" onClick={() => a.onReveal(job.outputPath!)}>
-              Show in folder
+            <button type="button" className="btn btn--sm" onClick={() => a.onReveal(job.outputPath!)}>
+              <IconReveal /> Show in folder
             </button>
           </>
         ) : null}
+        {row.canRetry ? (
+          <button type="button" className="btn btn--sm" onClick={() => a.onRetry(job.id)}>
+            <IconRetry /> {job.status === 'done' ? 'Convert again' : job.status === 'probe-failed' ? 'Read again' : 'Retry'}
+          </button>
+        ) : null}
+        <span className="job__actions-gap" />
         {job.media ? (
           <>
-            <button type="button" className="btn btn--small btn--ghost" onClick={() => a.onShowCommand(job.id)}>
-              Command
+            <button type="button" className="btn btn--sm btn--ghost" onClick={() => a.onShowCommand(job.id)}>
+              <IconCommand /> Command
             </button>
-            <button type="button" className="btn btn--small btn--ghost" onClick={() => a.onCopyCommand(job.id)}>
-              Copy command
+            <button type="button" className="btn btn--sm btn--ghost" onClick={() => a.onCopyCommand(job.id)}>
+              <IconCopy /> Copy command
             </button>
           </>
         ) : null}
         {row.hasLog ? (
-          <button type="button" className="btn btn--small btn--ghost" onClick={() => a.onShowLog(job.id)}>
-            Log
+          <button type="button" className="btn btn--sm btn--ghost" onClick={() => a.onShowLog(job.id)}>
+            <IconLog /> Log
           </button>
         ) : null}
         {row.canRemove ? (
-          <button type="button" className="btn btn--small btn--ghost" onClick={() => a.onRemove(job.id)} aria-label={`Remove ${job.name}`}>
-            Remove
+          <button type="button" className="btn btn--sm btn--ghost" onClick={() => a.onRemove(job.id)} aria-label={`Remove ${job.name} from the list`}>
+            <IconRemove /> Remove
           </button>
         ) : null}
       </div>
     </li>
   )
+}
+
+function runningMeta(row: JobRowModel): string {
+  const j = row.job
+  const parts: string[] = []
+  if (j.speed) parts.push(`${j.speed.toFixed(2)}×`)
+  if (j.etaSec != null) parts.push(`${formatDuration(j.etaSec)} left`)
+  else if (j.progress == null) parts.push('length unknown')
+  return parts.join(' · ')
 }

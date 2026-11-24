@@ -1,67 +1,110 @@
-/* Design tokens. All other CSS must reference these — the UI pass replaces this file wholesale. */
+/* Midnight Line Map — design tokens. Every other stylesheet references these. */
+@import './fonts.css';
+
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
 
-  --font-sans: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
-  --font-mono: 'Cascadia Mono', Consolas, monospace;
+  /* Type */
+  --font-ui: 'Barlow', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-sign: 'Barlow Semi Condensed', 'Barlow', 'Segoe UI', sans-serif;
+  --font-code: 'Cascadia Mono', Consolas, monospace;
 
-  --text-xs: 11px;
-  --text-sm: 12px;
-  --text-md: 14px;
-  --text-lg: 16px;
-  --text-xl: 20px;
+  --text-2xs: 0.75rem;   /* 12  sign labels */
+  --text-xs: 0.8125rem;  /* 13  station detail */
+  --text-sm: 0.875rem;   /* 14  data, controls */
+  --text-md: 1rem;       /* 16  file names, body */
+  --text-lg: 1.1875rem;  /* 19  wordmark, dialog titles */
+  --text-xl: 1.75rem;    /* 28  empty-state heading */
+  --track-sign: 0.08em;
 
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
+  /* Space (4px base) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
 
   --radius-sm: 4px;
   --radius-md: 6px;
-  --radius-lg: 10px;
+  --control-h: 34px;
+  --panel-w: 360px;
+  --header-h: 56px;
+  --footer-h: 76px;
 
-  --settings-width: 360px;
+  /* Enamel grounds */
+  --ground: #0b1230;
+  --ground-raised: #111a40;
+  --ground-sunk: #080e26;
+  --ground-hover: #16224f;
+  --hair: #24305c;
+  --outline: #4b5885;
+  --outline-strong: #c7cddf;
 
-  /* light */
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --surface-2: #eef0f3;
-  --border: #d9dce2;
-  --text: #1b1d22;
-  --text-muted: #5f6470;
-  --accent: #2f6fde;
-  --accent-text: #ffffff;
-  --danger: #c93b3b;
-  --warning: #9a6400;
-  --warning-bg: #fff4dc;
-  --success: #1f8a4c;
-  --success-bg: #e3f6ea;
-  --error-bg: #fde8e8;
-  --info-bg: #e6eefc;
-  --focus: #2f6fde;
-  --overlay: rgba(20, 24, 32, 0.55);
+  /* Porcelain ink */
+  --ink: #f3f1ea;
+  --ink-muted: #b4bbd1;
+  --ink-faint: #8390b0;
+
+  /* Line inks (routes, by output container) */
+  --line-mp4: #e21d2d;
+  --line-mkv: #2f6bff;
+  --line-mov: #ffc20e;
+  --line-webm: #22b14c;
+
+  /* Action + state */
+  --primary: #e21d2d;
+  --primary-hover: #f23545;
+  --primary-ink: #ffffff;
+  --select: #6f97ff;
+  --focus: #ffc20e;
+  --ok: #4cd37a;
+  --warn: #ffc20e;
+  --danger: #ff6b75;
+  --danger-ground: #2a1230;
+  --warn-ground: #241f2c;
+  --ok-ground: #0f2a36;
+  --scrim: rgba(5, 9, 26, 0.86);
+  --shadow: 0 12px 32px rgba(2, 5, 18, 0.55);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur: 180ms;
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    --bg: #16181d;
-    --surface: #1e2128;
-    --surface-2: #272b33;
-    --border: #353a44;
-    --text: #e7e9ee;
-    --text-muted: #9aa0ad;
-    --accent: #5b92f0;
-    --accent-text: #0d1117;
-    --danger: #ef6b6b;
-    --warning: #f0b84f;
-    --warning-bg: #3a2f17;
-    --success: #4fcf86;
-    --success-bg: #173324;
-    --error-bg: #3d1c1e;
-    --info-bg: #1b2a45;
-    --focus: #7aa8f5;
-    --overlay: rgba(0, 0, 0, 0.6);
+    color-scheme: light;
+    /* The same map, printed on porcelain */
+    --ground: #f4f2ec;
+    --ground-raised: #ffffff;
+    --ground-sunk: #ffffff;
+    --ground-hover: #e9e7f0;
+    --hair: #d8dbe6;
+    --outline: #8f98b5;
+    --outline-strong: #0b1230;
+
+    --ink: #0b1230;
+    --ink-muted: #3d4868;
+    --ink-faint: #5a6586;
+
+    --line-mp4: #d01a28;
+    --line-mkv: #1e55e6;
+    --line-mov: #dba400;
+    --line-webm: #1c9a41;
+
+    --primary: #d01a28;
+    --primary-hover: #b41320;
+    --select: #1e55e6;
+    --focus: #1e55e6;
+    --ok: #13803a;
+    --warn: #8a5d00;
+    --danger: #b4121f;
+    --danger-ground: #fbe9eb;
+    --warn-ground: #fdf3d8;
+    --ok-ground: #e4f4ea;
+    --scrim: rgba(244, 242, 236, 0.9);
+    --shadow: 0 12px 32px rgba(11, 18, 48, 0.16);
   }
 }
