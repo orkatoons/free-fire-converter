@@ -1,0 +1,67 @@
+/* Design tokens. All other CSS must reference these — the UI pass replaces this file wholesale. */
+:root {
+  color-scheme: light dark;
+
+  --font-sans: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Cascadia Mono', Consolas, monospace;
+
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  --settings-width: 360px;
+
+  /* light */
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #eef0f3;
+  --border: #d9dce2;
+  --text: #1b1d22;
+  --text-muted: #5f6470;
+  --accent: #2f6fde;
+  --accent-text: #ffffff;
+  --danger: #c93b3b;
+  --warning: #9a6400;
+  --warning-bg: #fff4dc;
+  --success: #1f8a4c;
+  --success-bg: #e3f6ea;
+  --error-bg: #fde8e8;
+  --info-bg: #e6eefc;
+  --focus: #2f6fde;
+  --overlay: rgba(20, 24, 32, 0.55);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16181d;
+    --surface: #1e2128;
+    --surface-2: #272b33;
+    --border: #353a44;
+    --text: #e7e9ee;
+    --text-muted: #9aa0ad;
+    --accent: #5b92f0;
+    --accent-text: #0d1117;
+    --danger: #ef6b6b;
+    --warning: #f0b84f;
+    --warning-bg: #3a2f17;
+    --success: #4fcf86;
+    --success-bg: #173324;
+    --error-bg: #3d1c1e;
+    --info-bg: #1b2a45;
+    --focus: #7aa8f5;
+    --overlay: rgba(0, 0, 0, 0.6);
+  }
+}

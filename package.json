@@ -1,0 +1,53 @@
+{
+  "name": "file-converter",
+  "productName": "File Converter",
+  "version": "0.1.0",
+  "description": "Batch video converter (ffmpeg) with match-source defaults",
+  "private": true,
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "build": "npm run typecheck && electron-vite build",
+    "test": "vitest run",
+    "fixtures": "node scripts/make-fixtures.mjs",
+    "e2e": "node scripts/make-fixtures.mjs && vitest run --config vitest.e2e.config.mts",
+    "dist": "npm run build && electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "local.fileconverter",
+    "productName": "File Converter",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zustand": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "electron": "^41.7.1",
+    "electron-builder": "^26.18.0",
+    "electron-vite": "^3.1.0",
+    "typescript": "^7.0.2",
+    "vite": "^6.4.6",
+    "vitest": "^4.1.12"
+  }
+}
