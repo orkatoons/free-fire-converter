@@ -34,11 +34,14 @@ export function App(): ReactNode {
 
   return (
     <div className="app">
-      <Header fileCount={s.jobs.length} onAddFiles={() => void s.pickFiles()} onAddFolder={() => void s.pickFolderToAdd()} />
+      <Header fileCount={s.jobs.length} version={s.appVersion} onAddFiles={() => void s.pickFiles()} onAddFolder={() => void s.pickFolderToAdd()} />
       <SystemBanner
         caps={s.caps}
         loading={s.capsLoading}
         verifiedHardware={model.verifiedHardware}
+        install={s.ffmpegInstall}
+        onDownloadFfmpeg={() => void s.installFfmpeg()}
+        onCancelDownload={() => void s.cancelFfmpegInstall()}
         onPickFfmpegDir={() => void s.pickFfmpegDir()}
         onRetry={() => void s.refreshCaps()}
       />

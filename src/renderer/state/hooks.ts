@@ -212,7 +212,9 @@ export function useSettingsModel(): SettingsModel {
       copyHint,
       activePresetName: active?.name ?? null,
       outputLabel: settings.output.dir ?? 'Same folder as each source file',
-      ffmpegInfo: caps?.ffmpegFound ? `ffmpeg ${caps.version} — ${caps.ffmpegPath}` : caps?.error ?? 'Detecting…',
+      ffmpegInfo: caps?.ffmpegFound
+        ? `ffmpeg ${caps.version} (${caps.source === 'managed' ? 'downloaded by this app' : caps.source === 'custom' ? 'your chosen folder' : 'installed on this PC'}) — ${caps.ffmpegPath}`
+        : caps?.error ?? 'Detecting…',
       verifiedHardware
     }
   }, [settings, caps, presets])

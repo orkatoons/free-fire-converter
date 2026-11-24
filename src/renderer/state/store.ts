@@ -8,6 +8,7 @@ import type {
   AppSettings,
   Capabilities,
   ConvertSettings,
+  FfmpegInstallProgress,
   Job,
   Notice,
   OutputSettings,
@@ -38,9 +39,14 @@ export interface AppState {
   summary: QueueFinishedSummary | null
   dragOver: boolean
   dialog: DialogState | null
+  appVersion: string | null
+  /** Progress of the in-app ffmpeg download; null when none has run this session */
+  ffmpegInstall: FfmpegInstallProgress | null
 
   init(): Promise<void>
   refreshCaps(): Promise<void>
+  installFfmpeg(): Promise<void>
+  cancelFfmpegInstall(): Promise<void>
 
   addPaths(paths: string[]): Promise<void>
   addDroppedFiles(files: File[]): Promise<void>
@@ -139,6 +145,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
   summary: null,
   dragOver: false,
   dialog: null,
+  appVersion: null,
+  ffmpegInstall: null,
 
   async init() {
     api.onState((s) => {
@@ -147,8 +155,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
     })
     api.onQueueFinished((summary) => set({ summary }))
     api.onNotice((n) => set((st) => ({ notices: [...st.notices, n] })))
-    const [settings, presets, state] = await Promise.all([api.loadSettings(), api.getPresets(), api.getState()])
-    set({ settings, presets, jobs: state.jobs, queue: state.queue, ready: true })
+    api.onFfmpegInstall((p) => set({ ffmpegInstall: p }))
+    const [settings, presets, state, info] = await Promise.all([api.loadSettings(), api.getPresets(), api.getState(), api.getAppInfo()])
+    set({ settings, presets, jobs: state.jobs, queue: state.queue, appVersion: info.version, ready: true })
     const caps = await api.getCapabilities()
     set({ caps, capsLoading: false })
   },
@@ -157,6 +166,21 @@ export const useAppStore = create<AppState>()((set, get) => ({
     set({ capsLoading: true })
     const caps = await api.refreshCapabilities()
     set({ caps, capsLoading: false })
+  },
+
+  async installFfmpeg() {
+    set({ ffmpegInstall: { phase: 'downloading', received: 0, total: null, version: null, error: null } })
+    try {
+      const caps = await api.installFfmpeg()
+      set({ caps })
+      if (caps.ffmpegFound) get().pushNotice('success', 'ffmpeg is installed. You can convert now.')
+    } catch {
+      // The progress event already carries the error or cancellation for the banner.
+    }
+  },
+
+  async cancelFfmpegInstall() {
+    await api.cancelFfmpegInstall()
   },
 
   async addPaths(paths) {

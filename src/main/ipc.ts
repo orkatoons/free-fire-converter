@@ -1,20 +1,24 @@
-import { BrowserWindow, Notification, dialog, ipcMain, shell } from 'electron'
+import { BrowserWindow, Notification, app, dialog, ipcMain, net, shell } from 'electron'
 import path from 'node:path'
 import { VIDEO_EXTENSIONS } from '../shared/defaults'
 import { IPC } from '../shared/ipc'
-import type { AppSettings, Capabilities, ConvertSettings, Notice, QueueFinishedSummary, StateSnapshot } from '../shared/types'
+import type { AppSettings, Capabilities, ConvertSettings, FfmpegInstallProgress, Notice, QueueFinishedSummary, StateSnapshot } from '../shared/types'
 import { detectCapabilities } from './ffmpeg/capabilities'
+import { installFfmpeg, managedFfmpegDir } from './ffmpeg/install'
 import { JobQueue } from './queue'
 import { deletePreset, listPresets, loadSettings, saveSettings, savePreset } from './settings'
 
 let capsPromise: Promise<Capabilities> | null = null
 let capsDir: string | null | undefined
+let installAbort: AbortController | null = null
+
+const managedRoot = (): string => path.join(app.getPath('userData'), 'ffmpeg')
 
 function getCapabilities(): Promise<Capabilities> {
   const dir = loadSettings().ffmpegDir
   if (!capsPromise || capsDir !== dir) {
     capsDir = dir
-    capsPromise = detectCapabilities(dir)
+    capsPromise = detectCapabilities(dir, managedFfmpegDir(managedRoot()))
   }
   return capsPromise
 }
@@ -123,6 +127,26 @@ export function registerIpc(getWindow: () => BrowserWindow | null): void {
       if (caps.ffmpegFound) queue.reprobeFailed()
     }
   })
+  ipcMain.handle(IPC.getAppInfo, () => ({ version: app.getVersion() }))
+  ipcMain.handle(IPC.installFfmpeg, async () => {
+    if (installAbort) throw new Error('ffmpeg is already downloading.')
+    installAbort = new AbortController()
+    try {
+      await installFfmpeg({
+        root: managedRoot(),
+        signal: installAbort.signal,
+        // Chromium networking: honours the system proxy, unlike Node's fetch
+        fetchImpl: net.fetch as unknown as typeof fetch,
+        onProgress: (p: FfmpegInstallProgress) => send(IPC.evFfmpegInstall, p)
+      })
+      const caps = await refreshCapabilities()
+      if (caps.ffmpegFound) queue.reprobeFailed()
+      return caps
+    } finally {
+      installAbort = null
+    }
+  })
+  ipcMain.handle(IPC.cancelFfmpegInstall, () => installAbort?.abort())
   ipcMain.handle(IPC.getPresets, () => listPresets())
   ipcMain.handle(IPC.savePreset, (_e, name: string, s: ConvertSettings) => savePreset(name, s))
   ipcMain.handle(IPC.deletePreset, (_e, id: string) => deletePreset(id))

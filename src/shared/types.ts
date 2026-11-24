@@ -81,8 +81,22 @@ export interface EncoderStatus {
   error?: string
 }
 
+export interface FfmpegInstallProgress {
+  phase: 'downloading' | 'verifying' | 'extracting' | 'done' | 'error' | 'cancelled'
+  received: number
+  total: number | null
+  version: string | null
+  error: string | null
+}
+
+export interface AppInfo {
+  version: string
+}
+
 export interface Capabilities {
   ffmpegFound: boolean
+  /** Where the ffmpeg in use came from */
+  source?: 'custom' | 'system' | 'managed'
   ffmpegPath: string | null
   ffprobePath: string | null
   version: string | null

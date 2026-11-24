@@ -7,7 +7,7 @@ import { runCapture } from './proc'
  * Detect ffmpeg, list encoders/hwaccels/filters, and verify hardware encoders with a real
  * 1-frame test encode (an encoder being *listed* doesn't mean the driver/GPU can use it).
  */
-export async function detectCapabilities(customDir: string | null): Promise<Capabilities> {
+export async function detectCapabilities(customDir: string | null, managedDir: string | null = null): Promise<Capabilities> {
   const empty: Capabilities = {
     ffmpegFound: false,
     ffmpegPath: null,
@@ -18,8 +18,8 @@ export async function detectCapabilities(customDir: string | null): Promise<Capa
     filters: { zscale: false, tonemap: false }
   }
 
-  const paths = await locateFfmpeg(customDir)
-  if (!paths) return { ...empty, error: 'ffmpeg/ffprobe not found on PATH or in the configured folder.' }
+  const paths = await locateFfmpeg(customDir, managedDir)
+  if (!paths) return { ...empty, error: 'ffmpeg/ffprobe not found on PATH, in the chosen folder, or in the app’s download folder.' }
 
   const [ver, enc, hw, filt] = await Promise.all([
     runCapture(paths.ffmpeg, ['-hide_banner', '-version']),
@@ -65,6 +65,7 @@ export async function detectCapabilities(customDir: string | null): Promise<Capa
 
   return {
     ffmpegFound: true,
+    source: paths.source,
     ffmpegPath: paths.ffmpeg,
     ffprobePath: paths.ffprobe,
     version,

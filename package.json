@@ -3,7 +3,13 @@
   "productName": "File Converter",
   "version": "0.1.0",
   "description": "Batch video converter (ffmpeg) with match-source defaults",
+  "author": "orkatoons",
+  "license": "UNLICENSED",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/orkatoons/free-fire-converter.git"
+  },
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -13,11 +19,15 @@
     "test": "vitest run",
     "fixtures": "node scripts/make-fixtures.mjs",
     "e2e": "node scripts/make-fixtures.mjs && vitest run --config vitest.e2e.config.mts",
-    "dist": "npm run build && electron-builder --win nsis"
+    "dist": "npm run build && electron-builder --win nsis --publish never",
+    "release:patch": "npm version patch -m \"Release v%s\" && git push --follow-tags",
+    "release:minor": "npm version minor -m \"Release v%s\" && git push --follow-tags",
+    "release:major": "npm version major -m \"Release v%s\" && git push --follow-tags"
   },
   "build": {
     "appId": "local.fileconverter",
     "productName": "File Converter",
+    "artifactName": "File-Converter-Setup-${version}.${ext}",
     "directories": {
       "output": "release"
     },
@@ -31,12 +41,15 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
-    }
-  },
-  "dependencies": {
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1",
-    "zustand": "^5.1.0"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "orkatoons",
+        "repo": "free-fire-converter",
+        "releaseType": "release"
+      }
+    ]
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
@@ -46,8 +59,11 @@
     "electron": "^41.7.1",
     "electron-builder": "^26.18.0",
     "electron-vite": "^3.1.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "typescript": "^7.0.2",
     "vite": "^6.4.6",
-    "vitest": "^4.1.12"
+    "vitest": "^4.1.12",
+    "zustand": "^5.1.0"
   }
 }

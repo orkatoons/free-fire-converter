@@ -144,6 +144,17 @@ kbd {
   letter-spacing: 0.06em;
   white-space: nowrap;
 }
+.header__version {
+  font-family: var(--font-sign);
+  font-weight: 600;
+  font-size: var(--text-2xs);
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-sm);
+  padding: 0 6px;
+  font-variant-numeric: tabular-nums;
+}
 .header__count {
   color: var(--ink-faint);
   font-size: var(--text-xs);
@@ -375,6 +386,14 @@ input[type='range'] {
 }
 .banner__body strong {
   font-weight: 600;
+}
+.banner--install .banner__body {
+  display: grid;
+  gap: var(--s-2);
+}
+.banner--install .pline {
+  --line: var(--line-mp4);
+  max-width: 480px;
 }
 .banner__detail {
   margin-top: var(--s-1);

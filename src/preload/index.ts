@@ -34,7 +34,11 @@ const api: RendererApi = {
   getPresets: () => ipcRenderer.invoke(IPC.getPresets),
   savePreset: (name, s) => ipcRenderer.invoke(IPC.savePreset, name, s),
   deletePreset: (id) => ipcRenderer.invoke(IPC.deletePreset, id),
+  getAppInfo: () => ipcRenderer.invoke(IPC.getAppInfo),
+  installFfmpeg: () => ipcRenderer.invoke(IPC.installFfmpeg),
+  cancelFfmpegInstall: () => ipcRenderer.invoke(IPC.cancelFfmpegInstall),
   onState: (cb) => on(IPC.evState, cb),
+  onFfmpegInstall: (cb) => on(IPC.evFfmpegInstall, cb),
   onQueueFinished: (cb) => on(IPC.evQueueFinished, cb),
   onNotice: (cb) => on(IPC.evNotice, cb)
 }

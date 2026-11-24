@@ -1,8 +1,10 @@
 import type {
   AddResult,
+  AppInfo,
   AppSettings,
   Capabilities,
   ConvertSettings,
+  FfmpegInstallProgress,
   Notice,
   Preset,
   QueueFinishedSummary,
@@ -35,10 +37,14 @@ export const IPC = {
   getPresets: 'presets:list',
   savePreset: 'presets:save',
   deletePreset: 'presets:delete',
+  getAppInfo: 'app:info',
+  installFfmpeg: 'ffmpeg:install',
+  cancelFfmpegInstall: 'ffmpeg:cancelInstall',
   // main -> renderer events
   evState: 'ev:state',
   evQueueFinished: 'ev:queueFinished',
-  evNotice: 'ev:notice'
+  evNotice: 'ev:notice',
+  evFfmpegInstall: 'ev:ffmpegInstall'
 } as const
 
 export type Unsubscribe = () => void
@@ -78,7 +84,13 @@ export interface RendererApi {
   savePreset(name: string, settings: ConvertSettings): Promise<Preset[]>
   deletePreset(id: string): Promise<Preset[]>
 
+  getAppInfo(): Promise<AppInfo>
+  /** Download + verify + unpack ffmpeg into the app's data folder. Resolves with fresh capabilities. */
+  installFfmpeg(): Promise<Capabilities>
+  cancelFfmpegInstall(): Promise<void>
+
   onState(cb: (s: StateSnapshot) => void): Unsubscribe
+  onFfmpegInstall(cb: (p: FfmpegInstallProgress) => void): Unsubscribe
   onQueueFinished(cb: (s: QueueFinishedSummary) => void): Unsubscribe
   onNotice(cb: (n: Notice) => void): Unsubscribe
 }

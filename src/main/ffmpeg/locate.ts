@@ -42,9 +42,18 @@ async function resolveShim(exe: string): Promise<string> {
   return m && existsSync(m[1]) ? m[1] : exe
 }
 
-/** Find ffmpeg + ffprobe. `custom` may be a folder or a path to ffmpeg(.exe). */
-export async function locateFfmpeg(custom: string | null): Promise<FfmpegPaths | null> {
+export interface LocatedFfmpeg extends FfmpegPaths {
+  source: 'custom' | 'system' | 'managed'
+}
+
+/**
+ * Find ffmpeg + ffprobe. Order: the user's chosen folder, then PATH and common install
+ * locations, then the copy this app downloaded (`managedDir`).
+ * `custom` may be a folder or a path to ffmpeg(.exe).
+ */
+export async function locateFfmpeg(custom: string | null, managedDir: string | null = null): Promise<LocatedFfmpeg | null> {
   let found: FfmpegPaths | null = null
+  let source: LocatedFfmpeg['source'] = 'system'
   if (custom) {
     let dir = custom
     try {
@@ -53,6 +62,7 @@ export async function locateFfmpeg(custom: string | null): Promise<FfmpegPaths |
       /* ignore */
     }
     found = pairIn(dir) ?? pairIn(path.join(dir, 'bin'))
+    if (found) source = 'custom'
   }
   if (!found) {
     for (const d of candidateDirs()) {
@@ -60,6 +70,10 @@ export async function locateFfmpeg(custom: string | null): Promise<FfmpegPaths |
       if (found) break
     }
   }
+  if (!found && managedDir) {
+    found = pairIn(managedDir)
+    if (found) source = 'managed'
+  }
   if (!found) return null
-  return { ffmpeg: await resolveShim(found.ffmpeg), ffprobe: await resolveShim(found.ffprobe) }
+  return { ffmpeg: await resolveShim(found.ffmpeg), ffprobe: await resolveShim(found.ffprobe), source }
 }
